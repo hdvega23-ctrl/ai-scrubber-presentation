@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Scrubber – Presentation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #050816;
+      --card-bg: #0b1020;
+      --accent: #4ade80;
+      --accent-soft: rgba(74, 222, 128, 0.15);
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --danger: #f97373;
+      --info: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #111827, #020617 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .frame {
+      max-width: 960px;
+      width: 100%;
+      background: linear-gradient(145deg, rgba(148, 163, 184, 0.12), rgba(15, 23, 42, 0.95));
+      border-radius: 24px;
+      padding: 24px 24px 16px;
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(148, 163, 184, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .frame-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      padding-bottom: 12px;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .title-block h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .progress-text {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .scene-container {
+      position: relative;
+      flex: 1;
+      min-height: 320px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 55%),
+                  radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 55%),
+                  linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(3, 7, 18, 0.98));
+      border-radius: 20px;
+      padding: 20px 20px 16px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      padding: 20px;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    .scene.active {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .scene-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      width: fit-content;
+    }
+
+    .scene-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      margin-top: 2px;
+    }
+
+    .scene-caption {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .scene-main {
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.5fr);
+      gap: 18px;
+    }
+
+    .scene-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .scene-text p + p {
+      margin-top: 0.6rem;
+    }
+
+    .scene-visual {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.6));
+      border-radius: 16px;
+      padding: 12px 12px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .visual-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--info);
+    }
+
+    .visual-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .visual-box {
+      margin-top: 4px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 60%),
+                  radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.15), transparent 60%),
+                  rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.78rem;
+    }
+
+    .visual-big {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    .visual-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .bullets {
+      margin-top: 4px;
+      padding-left: 16px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .bullets li + li {
+      margin-top: 4px;
+    }
+
+    .cta-line {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .control-left {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .control-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 7px 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    }
+
+    button.primary {
+      background: radial-gradient(circle at top left, rgba(74, 222, 128, 0.3), rgba(22, 163, 74, 0.9));
+      border-color: rgba(74, 222, 128, 0.8);
+      font-weight: 600;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+      background: rgba(15, 23, 42, 1);
+    }
+
+    button.primary:not(:disabled):hover {
+      background: radial-gradient(circle at top left, rgba(74, 222, 128, 0.4), rgba(22, 163, 74, 1));
+    }
+
+    .dot-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.4);
+      transition: transform 0.16s ease, background 0.16s ease;
+    }
+
+    .dot.active {
+      background: var(--accent);
+      transform: scale(1.3);
+    }
+
+    .hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .playing-indicator {
+      font-size: 0.75rem;
+      color: var(--info);
+    }
+
+    @media (max-width: 768px) {
+      .frame {
+        padding: 18px 16px 12px;
+      }
+      .scene-main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .scene-container {
+        padding: 14px;
+      }
+      .scene {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <header class="frame-header">
+      <div class="title-block">
+        <div class="title-pill">AI Innovation • Updater</div>
+        <h1>AI Scrubber – Forwarding Innovation</h1>
+        <div class="subtitle">3-minute “video” style walkthrough, built in HTML.</div>
+      </div>
+      <div class="progress-text" id="progressText">Scene 1 of 8</div>
+    </header>
+
+    <main class="scene-container">
+      <!-- SCENE 1 -->
+      <section class="scene active" data-scene="1">
+        <div class="scene-tag">Scene 1 • Hook</div>
+        <h2 class="scene-title">226,000 Pieces of Mail. 23 Manual Steps.</h2>
+        <p class="scene-caption">
+          Set the stakes and reveal the hidden complexity behind a “simple” mail forwarding flow.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “Every day, Updater forwards over <strong>226,000 pieces of mail</strong>.
+              And behind the scenes… we’re doing it with a <strong>23-step workflow</strong>
+              that takes about <strong>40 minutes a day</strong> and way too many clicks.”
+            </p>
+            <p>
+              “This is the part of our business that nobody sees. Today, I want to show you how AI
+              can turn that chaos into one intelligent flow.”
+            </p>
+            <p class="cta-line">
+              → This is where you’d hook the viewer in a real video with fast cuts and bold text.
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">On-screen Visual</div>
+            <div class="visual-box">
+              <div class="visual-big">226K</div>
+              <div class="visual-sub">Mail forwardings / day</div>
+            </div>
+            <ul class="bullets">
+              <li>Rapid flashes of: Jarvis UI, spreadsheets, FTP folders, Zendesk tickets.</li>
+              <li>Overlay text: “23 steps • 40 minutes • 226K mail / day”.</li>
+              <li>Subtle motion blur to imply chaos.</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCENE 2 -->
+      <section class="scene" data-scene="2">
+        <div class="scene-tag">Scene 2 • The Problem</div>
+        <h2 class="scene-title">The 23-Step Rube Goldberg Workflow</h2>
+        <p class="scene-caption">
+          Show how absurd the current process is – perfect setup for AI to shine.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “Here’s what our current process looks like:
+              move files from <strong>Jarvis</strong>, download, upload, re-download.
+              Create a custom scrubbing sheet. Fix ZIP codes and dates by hand.
+              Run <strong>11 separate filters</strong>.”
+            </p>
+            <p>
+              “We hunt down invalid records in Jarvis by username, check Zendesk for last-minute changes,
+              export a CSV, upload it to FTP, wait 20–30 minutes, run QA again, and finally email IMS.”
+            </p>
+            <p>
+              “All of that… just to forward someone’s mail.”
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">On-screen Visual</div>
+            <div class="visual-box">
+              <div class="visual-sub">Current Workflow</div>
+              <ul class="bullets">
+                <li>Jarvis → Scrubbing</li>
+                <li>Download / Upload / Re-upload</li>
+                <li>Scrubbing sheet creation</li>
+                <li>Format ZIPs & dates</li>
+                <li>11 filters, invalid lookups</li>
+                <li>Zendesk updates</li>
+                <li>CSV → FTP → QA → IMS</li>
+              </ul>
+            </div>
+            <p class="cta-line">
+              Visual idea: a tangled “spaghetti” flowchart animating across the screen.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCENE 3 -->
+      <section class="scene" data-scene="3">
+        <div class="scene-tag">Scene 3 • Pivot</div>
+        <h2 class="scene-title">A Workflow That Just “Happened”</h2>
+        <p class="scene-caption">
+          Position the mess as a perfect opportunity for AI.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “This workflow wasn’t really designed. It just… <strong>happened</strong>.
+              Step by step, patch by patch, as the business grew.”
+            </p>
+            <p>
+              “And that makes it the perfect candidate for AI transformation.
+              Instead of adding more people to maintain the chaos,
+              we can add intelligence to <strong>simplify</strong> it.”
+            </p>
+            <p class="cta-line">
+              “That’s where <strong>AI Scrubber</strong> comes in.”
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">On-screen Visual</div>
+            <div class="visual-box">
+              <div class="visual-sub">Transition Moment</div>
+              <ul class="bullets">
+                <li>Spaghetti diagram begins to glow and “melt” away.</li>
+                <li>A single, clean pipeline fades in labeled “AI Scrubber”.</li>
+                <li>Sub-text: “23 steps → 1 intelligent flow”.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCENE 4 -->
+      <section class="scene" data-scene="4">
+        <div class="scene-tag">Scene 4 • Intro Solution</div>
+        <h2 class="scene-title">Meet AI Scrubber – One Intelligent Pipeline</h2>
+        <p class="scene-caption">
+          Introduce the core concept in a single, memorable visual.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “Introducing <strong>AI Scrubber</strong>, our intelligent automation pipeline
+              that turns 23 steps into <strong>one smart flow</strong>.”
+            </p>
+            <p>
+              “Instead of humans babysitting files and filters,
+              AI Scrubber watches for new files, validates the data,
+              handles invalids, syncs changes, and delivers a finished,
+              print-ready file with humans in the loop only where it matters.”
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">On-screen Visual</div>
+            <div class="visual-box">
+              <div class="visual-sub">High-Level Pipeline</div>
+              <ul class="bullets">
+                <li>Input: Jarvis file & scrubbing folder.</li>
+                <li>AI Scrubber engine in the middle.</li>
+                <li>Output: Clean CSV → FTP → IMS.</li>
+              </ul>
+            </div>
+            <div class="visual-chip-row">
+              <span class="chip">Automation</span>
+              <span class="chip">Validation</span>
+              <span class="chip">Reasoning</span>
+              <span class="chip">Human-in-the-loop</span>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCENE 5 -->
+      <section class="scene" data-scene="5">
+        <div class="scene-tag">Scene 5 • Ingenuity</div>
+        <h2 class="scene-title">How AI Scrubber Reimagines the Workflow</h2>
+        <p class="scene-caption">
+          Highlight the clever AI moments that go beyond “just automation”.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “AI Scrubber starts with <strong>autonomous file intake</strong>:
+              it detects new files from Jarvis and scrubbing automatically—no manual downloading or uploading.”
+            </p>
+            <p>
+              “It performs <strong>smart data validation</strong>, fixing ZIP codes and dates,
+              and only flags truly ambiguous rows.”
+            </p>
+            <p>
+              “For invalid records, it <strong>looks up the mover in Jarvis</strong>,
+              compares fields, and suggests the correct rejection reason.”
+            </p>
+            <p>
+              “It <strong>syncs mover changes in real time</strong>, reads Zendesk tickets for last-minute updates,
+              and finally <strong>exports and delivers</strong> the CSV to FTP and prepares the IMS email.”
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">AI Capabilities</div>
+            <div class="visual-box">
+              <ul class="bullets">
+                <li>Monitoring & ingestion of files.</li>
+                <li>Structured data repair (ZIPs, dates, formats).</li>
+                <li>Record lookup + mismatch detection.</li>
+                <li>Classification of invalid reasons.</li>
+                <li>Cross-system reasoning (Jarvis + Zendesk).</li>
+                <li>Workflow orchestration to FTP & IMS.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCENE 6 -->
+      <section class="scene" data-scene="6">
+        <div class="scene-tag">Scene 6 • Human Role</div>
+        <h2 class="scene-title">You Stay in Control – Human in the Loop</h2>
+        <p class="scene-caption">
+          Reassure: AI handles the grunt work, humans handle judgment.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “Importantly, AI Scrubber doesn’t replace humans—it <strong>upgrades</strong> them.”
+            </p>
+            <p>
+              “Ops sees a simple dashboard:
+              valid records, invalids with suggested reasons, and a final <strong>Approve & Send</strong> action.”
+            </p>
+            <p>
+              “Our job shifts from repetitive admin to <strong>reviewing, approving,
+              and handling edge cases</strong>.”
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">On-screen Visual</div>
+            <div class="visual-box">
+              <div class="visual-sub">Dashboard Mock</div>
+              <ul class="bullets">
+                <li>Card: “Valid records ✓”.</li>
+                <li>Card: “Invalids – suggested reasons”.</li>
+                <li>Primary button: “Approve & Send to IMS”.</li>
+              </ul>
+            </div>
+            <p class="cta-line">
+              Camera zooms slightly to make this feel like the “aha” control moment.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCENE 7 -->
+      <section class="scene" data-scene="7">
+        <div class="scene-tag">Scene 7 • Impact</div>
+        <h2 class="scene-title">Time Back. Quality Up. Accuracy Guaranteed.</h2>
+        <p class="scene-caption">
+          Convert the concept into tangible, scoreboard-style value.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “With AI Scrubber, we reclaim up to <strong>40 minutes every day</strong>,
+              dramatically reduce the risk of manual errors,
+              and give movers more accurate, up-to-date forwarding.”
+            </p>
+            <p>
+              “We can confidently scale beyond <strong>226,000 mail forwardings per day</strong>
+              without piling on manual workload.”
+            </p>
+            <p class="cta-line">
+              “This is time back. This is quality up. This is accuracy, built in.”
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">Impact Metrics</div>
+            <div class="visual-box">
+              <ul class="bullets">
+                <li><strong>40 min/day</strong> saved from manual scrubbing.</li>
+                <li>Up to <strong>90% fewer errors</strong> from formatting & invalid handling.</li>
+                <li>Real-time updates for last-minute mover changes.</li>
+                <li>Scalable operations beyond 226K pieces / day.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCENE 8 -->
+      <section class="scene" data-scene="8">
+        <div class="scene-tag">Scene 8 • Close</div>
+        <h2 class="scene-title">23 Steps → One AI-Powered Pipeline</h2>
+        <p class="scene-caption">
+          Land the story with a simple, memorable transformation line.
+        </p>
+
+        <div class="scene-main">
+          <div class="scene-text">
+            <p>
+              “AI Scrubber transforms one of our most painful operational workflows
+              into a fully intelligent pipeline.”
+            </p>
+            <p>
+              “23 steps → <strong>one AI-powered process</strong>.  
+              Manual chaos → <strong>automated clarity</strong>.  
+              Old process → <strong>new possibility</strong>.”
+            </p>
+            <p>
+              “This is what happens when AI meets operations at Updater.
+              We don’t just forward mail—we <strong>forward innovation</strong>.”
+            </p>
+          </div>
+          <aside class="scene-visual">
+            <div class="visual-label">On-screen Visual</div>
+            <div class="visual-box">
+              <div class="visual-sub">Final Split Screen</div>
+              <ul class="bullets">
+                <li>Left: Old spaghetti workflow, greyed out.</li>
+                <li>Right: Clean AI Scrubber pipeline glowing.</li>
+                <li>Center text: “Forwarding Innovation”.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="controls">
+      <div class="control-left">
+        <button id="prevBtn">
+          ◀ Previous
+        </button>
+        <button id="nextBtn" class="primary">
+          Next ▶
+        </button>
+      </div>
+      <div class="control-right">
+        <button id="playBtn">▶ Play Through</button>
+        <span class="playing-indicator" id="playingIndicator" style="display:none;">
+          Playing automatically…
+        </span>
+        <div class="dot-row" id="dotRow">
+          <!-- dots inserted by JS -->
+        </div>
+      </div>
+    </footer>
+    <div class="hint">
+      Tip: Use <strong>Next</strong> to step through like slides, or <strong>Play Through</strong> to auto-advance like a video.
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const scenes = Array.from(document.querySelectorAll(".scene"));
+      const progressText = document.getElementById("progressText");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const playBtn = document.getElementById("playBtn");
+      const playingIndicator = document.getElementById("playingIndicator");
+      const dotRow = document.getElementById("dotRow");
+
+      let current = 0;
+      let playTimer = null;
+      const autoAdvanceDelay = 11000; // ms per scene when playing (~11s)
+
+      // Build dots
+      scenes.forEach((_, idx) => {
+        const dot = document.createElement("div");
+        dot.className = "dot" + (idx === 0 ? " active" : "");
+        dot.dataset.index = idx;
+        dotRow.appendChild(dot);
+      });
+
+      const dots = Array.from(document.querySelectorAll(".dot"));
+
+      function updateUI() {
+        scenes.forEach((s, idx) => {
+          s.classList.toggle("active", idx === current);
+        });
+        dots.forEach((d, idx) => {
+          d.classList.toggle("active", idx === current);
+        });
+        progressText.textContent = `Scene ${current + 1} of ${scenes.length}`;
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current === scenes.length - 1;
+      }
+
+      function goTo(index) {
+        if (index < 0 || index >= scenes.length) return;
+        current = index;
+        updateUI();
+      }
+
+      function nextScene() {
+        if (current < scenes.length - 1) {
+          goTo(current + 1);
+        } else {
+          stopPlaying();
+        }
+      }
+
+      function prevScene() {
+        if (current > 0) {
+          goTo(current - 1);
+        }
+      }
+
+      function startPlaying() {
+        stopPlaying();
+        playBtn.textContent = "⏸ Pause";
+        playingIndicator.style.display = "inline";
+        playTimer = setInterval(() => {
+          if (current >= scenes.length - 1) {
+            stopPlaying();
+          } else {
+            nextScene();
+          }
+        }, autoAdvanceDelay);
+      }
+
+      function stopPlaying() {
+        if (playTimer) {
+          clearInterval(playTimer);
+          playTimer = null;
+        }
+        playBtn.textContent = "▶ Play Through";
+        playingIndicator.style.display = "none";
+      }
+
+      prevBtn.addEventListener("click", () => {
+        stopPlaying();
+        prevScene();
+      });
+
+      nextBtn.addEventListener("click", () => {
+        stopPlaying();
+        nextScene();
+      });
+
+      playBtn.addEventListener("click", () => {
+        if (playTimer) {
+          stopPlaying();
+        } else {
+          startPlaying();
+        }
+      });
+
+      dots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+          stopPlaying();
+          goTo(Number(dot.dataset.index));
+        });
+      });
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
